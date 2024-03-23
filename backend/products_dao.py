@@ -31,13 +31,15 @@ def insert_new_product(connection, product):
 
     return cursor.lastrowid
 
-def delete_product(connection, product_id):
+def delete_product(connection, ProductID):
     cursor = connection.cursor()
-    query = ("DELETE FROM product WHERE ProductID=" + str(product_id))
+    query = ("DELETE FROM product WHERE ProductID=" + str(ProductID))
     cursor.execute(query)
     connection.commit()
 
     return cursor.rowcount
+
+
 
 if __name__ == "__main__":
     connection = get_sql_connection()

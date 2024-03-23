@@ -6,7 +6,7 @@ var productModal = $("#productModal");
             if(response) {
                 var table = '';
                 $.each(response, function(index, product) {
-                    table += '<tr data-id="'+ product.ProductId +'" data-name="'+ product.ProductName +'" data-unit="'+ product.UnitWeight +'" data-price="'+ product.UnitPrice +'">' +
+                    table += '<tr data-id="'+ product.ProductID +'" data-name="'+ product.ProductName +'" data-unit="'+ product.UnitWeight +'" data-price="'+ product.UnitPrice +'">' +
                         '<td>'+ product.ProductName +'</td>'+
                         '<td>'+ product.UnitWeight +'</td>'+
                         '<td>'+ product.UnitPrice +'</td>'+
@@ -48,7 +48,7 @@ var productModal = $("#productModal");
     $(document).on("click", ".delete-product", function (){
         var tr = $(this).closest('tr');
         var data = {
-            product_id : tr.data('id')
+            ProductID : tr.data('id')
         };
         var isDelete = confirm("Are you sure to delete "+ tr.data('name') +" item?");
         if (isDelete) {
