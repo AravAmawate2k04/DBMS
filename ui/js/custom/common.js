@@ -15,7 +15,13 @@ function callApi(method, url, data) {
         url: url,
         data: data
     }).done(function( msg ) {
-        window.location.reload();
+        if (msg.error) {
+            alert(msg.error);
+        } else {
+            window.location.reload();
+        }
+    }).fail(function(jqXHR, textStatus, errorThrown) {
+        alert('Error: ' + errorThrown);
     });
 }
 
