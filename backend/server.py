@@ -15,12 +15,15 @@ connection = get_sql_connection()
 
 def create_trigger(connection):
     cursor = connection.cursor()
-    drop_trigger_query = """
-    DROP TRIGGER IF EXISTS before_product_insert;
-    """
-    cursor.execute(drop_trigger_query)
 
-    create_trigger_query = """
+    # Drop triggers if they exist
+    drop_product_trigger_query = "DROP TRIGGER IF EXISTS before_product_insert;"
+    drop_category_trigger_query = "DROP TRIGGER IF EXISTS before_category_insert;"
+    cursor.execute(drop_product_trigger_query)
+    cursor.execute(drop_category_trigger_query)
+
+    # Create trigger for product
+    create_product_trigger_query = """
     CREATE TRIGGER before_product_insert
     BEFORE INSERT ON product
     FOR EACH ROW
@@ -30,7 +33,21 @@ def create_trigger(connection):
         END IF;
     END;
     """
-    cursor.execute(create_trigger_query)
+    cursor.execute(create_product_trigger_query)
+
+    # Create trigger for category
+    create_category_trigger_query = """
+    CREATE TRIGGER before_category_insert
+    BEFORE INSERT ON product
+    FOR EACH ROW
+    BEGIN
+        IF (SELECT COUNT(*) FROM category WHERE CategoryID = NEW.CategoryID) = 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CategoryID does not exist in category table';
+        END IF;
+    END;
+    """
+    cursor.execute(create_category_trigger_query)
+
     connection.commit()
 
 @app.route('/getProducts', methods=['GET'])
