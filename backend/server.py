@@ -13,6 +13,43 @@ CORS(app)  # This will enable CORS for all routes
 
 connection = get_sql_connection()
 
+def create_trigger(connection):
+    cursor = connection.cursor()
+
+    # Drop triggers if they exist
+    drop_product_trigger_query = "DROP TRIGGER IF EXISTS before_product_insert;"
+    drop_category_trigger_query = "DROP TRIGGER IF EXISTS before_category_insert;"
+    cursor.execute(drop_product_trigger_query)
+    cursor.execute(drop_category_trigger_query)
+
+    # Create trigger for product
+    create_product_trigger_query = """
+    CREATE TRIGGER before_product_insert
+    BEFORE INSERT ON product
+    FOR EACH ROW
+    BEGIN
+        IF (SELECT COUNT(*) FROM supplier WHERE supplierID = NEW.supplierID) = 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'SupplierID does not exist in supplier table';
+        END IF;
+    END;
+    """
+    cursor.execute(create_product_trigger_query)
+
+    # Create trigger for category
+    create_category_trigger_query = """
+    CREATE TRIGGER before_category_insert
+    BEFORE INSERT ON product
+    FOR EACH ROW
+    BEGIN
+        IF (SELECT COUNT(*) FROM category WHERE CategoryID = NEW.CategoryID) = 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'CategoryID does not exist in category table';
+        END IF;
+    END;
+    """
+    cursor.execute(create_category_trigger_query)
+
+    connection.commit()
+
 @app.route('/getProducts', methods=['GET'])
 def get_products():
     response = products_dao.get_all_products(connection)
@@ -24,13 +61,16 @@ def get_products():
 
 @app.route('/insertProduct', methods=['POST'])
 def insert_product():
-    request_payload = json.loads(request.form['data'])
-    product_id = products_dao.insert_new_product(connection, request_payload)
-    response = jsonify({
-        'product_id': product_id
-    })
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    return response
+    try:
+        request_payload = json.loads(request.form['data'])
+        product_id = products_dao.insert_new_product(connection, request_payload)
+        response = jsonify({
+            'product_id': product_id
+        })
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
+    except mysql.connector.Error as error:
+        return jsonify({'error': str(error)})
 
 @app.route('/deleteProduct', methods=['POST'])
 def delete_product():
@@ -50,4 +90,5 @@ def get_all_orders():
 
 if __name__ == "__main__":
     print("Starting Python Flask Server For FlipMart")
+    create_trigger(connection)
     app.run(port=5000)
