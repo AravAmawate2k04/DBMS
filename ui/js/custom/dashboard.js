@@ -2,6 +2,8 @@ $(function () {
     //Json data by api call for order table
     $.get(orderListApiUrl, function (response) {
         if(response) {
+            // to check if response is there 
+            // console.log(response);
             var table = '';
             var totalCost = 0;
             $.each(response, function(index, order) {

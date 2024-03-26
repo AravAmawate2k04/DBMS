@@ -72,15 +72,6 @@ CREATE TABLE OrderTable(
     FOREIGN KEY (CustomerID) REFERENCES Customer(CustomerID),
     FOREIGN KEY (ProductID) REFERENCES Product(ProductID)
 );
-
-
-
-
-
-
-
-
-
 CREATE TABLE Payment (
     BillingID INTEGER PRIMARY KEY AUTO_INCREMENT,
     Bill_Date DATE,
