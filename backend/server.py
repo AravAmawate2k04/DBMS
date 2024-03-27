@@ -19,8 +19,10 @@ def create_trigger(connection):
     # Drop triggers if they exist
     drop_product_trigger_query = "DROP TRIGGER IF EXISTS before_product_insert;"
     drop_category_trigger_query = "DROP TRIGGER IF EXISTS before_category_insert;"
+    drop_product_delete_trigger_query = "DROP TRIGGER IF EXISTS before_product_delete;"
     cursor.execute(drop_product_trigger_query)
     cursor.execute(drop_category_trigger_query)
+    cursor.execute(drop_product_delete_trigger_query)
 
     # Create trigger for product
     create_product_trigger_query = """
@@ -48,6 +50,19 @@ def create_trigger(connection):
     """
     cursor.execute(create_category_trigger_query)
 
+    # Create trigger for product deletion
+    create_product_delete_trigger_query = """
+    CREATE TRIGGER before_product_delete
+    BEFORE DELETE ON product
+    FOR EACH ROW
+    BEGIN
+        IF (SELECT COUNT(*) FROM cart WHERE Product_ID = OLD.ProductID) > 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Product is in the cart, cannot delete';
+        END IF;
+    END;
+    """
+    cursor.execute(create_product_delete_trigger_query)
+
     connection.commit()
 
 @app.route('/getProducts', methods=['GET'])
@@ -74,12 +89,15 @@ def insert_product():
 
 @app.route('/deleteProduct', methods=['POST'])
 def delete_product():
-    return_id = products_dao.delete_product(connection, request.form['ProductID'])
-    response = jsonify({
-        'product_id': return_id
-    })
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    return response
+    try:
+        return_id = products_dao.delete_product(connection, request.form['ProductID'])
+        response = jsonify({
+            'product_id': return_id
+        })
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
+    except mysql.connector.Error as error:
+        return jsonify({'error': str(error)})
 
 @app.route('/getAllOrders', methods=['GET'])
 def get_all_orders():
