@@ -19,20 +19,52 @@ def get_all_orders(connection):
     return response
 
 
-def insert_order(connection, order):
+def insert_order(connection, request_payload):
     cursor = connection.cursor()
-    order_query = ("INSERT INTO OrderTable "
-                   "(CustomerID, Freight, Ship_VIA, OrderDate, Quantity, ProductID)"
-                   "VALUES (%s, %s, %s, %s, %s, %s)")
-    order_data = (order['CustomerID'], order['Freight'], order['Ship_VIA'], order['OrderDate'],
-                  order['Quantity'], order['ProductID'])
 
-    cursor.execute(order_query, order_data)
-    order_id = cursor.lastrowid
-    
+    # Extract constant order details
+    order_details = request_payload['orderDetails']
+    customer_id = None
+    freight = None
+    ship_via = None
+    order_date = None
+
+    for detail in order_details:
+        if detail['name'] == 'customerID':
+            customer_id = detail['value']
+        elif detail['name'] == 'freight':
+            freight = detail['value']
+        elif detail['name'] == 'ship_VIA':
+            ship_via = detail['value']
+        elif detail['name'] == 'orderDate':
+            order_date = detail['value']
+
+    # Extract product details
+    product_pairs = []
+    current_product = {}
+    for detail in order_details:
+        if detail['name'] == 'productID':
+            current_product['productID'] = detail['value']
+        elif detail['name'] == 'quantity':
+            current_product['quantity'] = detail['value']
+            product_pairs.append(current_product.copy())
+
+    # Insert order details and product details into the database
+    for product in product_pairs:
+        product_id = product['productID']
+        quantity = product['quantity']
+
+        # Insert product details into OrderTable
+        order_query = ("INSERT INTO OrderTable "
+                       "(CustomerID, Freight, Ship_VIA, OrderDate, Quantity, ProductID)"
+                       "VALUES (%s, %s, %s, %s, %s, %s)")
+        order_data = (customer_id, freight, ship_via, order_date, quantity, product_id)
+        cursor.execute(order_query, order_data)
+
     connection.commit()
+    return cursor.lastrowid
 
-    return order_id
+
 
 if __name__ == '__main__':
     # Establish a connection to the database
@@ -66,4 +98,3 @@ if __name__ == '__main__':
 
     # After testing, print all orders to verify if they're inserted correctly
     print(get_all_orders(connection))
-
